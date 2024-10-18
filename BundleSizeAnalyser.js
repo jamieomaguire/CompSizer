@@ -151,7 +151,7 @@ class BundleSizeAnalyser {
      * Outputs the results of the bundle size analysis to the console.
      */
     outputResults() {
-        console.log(this.chalk.bold('\nBundle Size Analyser Report\n'));
+        console.log(this.chalk.bold('\Component Bundle Sizes Report\n'));
         for (const [componentName, result] of Object.entries(this.results)) {
             console.log(this.chalk.blue.bold(`Component: ${componentName}`));
             console.log(`Total Size: ${result.totalSizeKB.toFixed(2)} KB`);
