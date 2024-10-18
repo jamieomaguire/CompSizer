@@ -1,5 +1,5 @@
 {
-  "name": "CompSizer",
+  "name": "compsizer",
   "version": "0.1.0",
   "description": "A tool for analysing the size of component packages in your monorepo.",
   "type": "module",

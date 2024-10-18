@@ -1,16 +1,16 @@
-# CompSizer
+# compsizer
 
-CompSizer is a tool designed to analyze the size of component bundles in your project. It helps you ensure your component sizes are within acceptable limits by comparing them against baselines and showing size increases across builds. You can also configure gzip and Brotli compression checks.
+compsizer is a tool designed to analyse the size of component bundles in your project. It helps you ensure your component sizes are within acceptable limits by comparing them against baselines and showing size increases across builds. You can also configure gzip and Brotli compression checks.
 
 ## Features
-- Analyze the size of individual component bundles.
+- Analyse the size of individual component bundles.
 - Compare sizes against baseline sizes.
 - Warn when size exceeds configured thresholds.
 - Supports gzip and Brotli compression analysis.
 
 ## Installation
 
-You can install `CompSizer` locally in your project.
+You can install `compsizer` locally in your project.
 
 ### Local Installation
 
@@ -47,7 +47,7 @@ You can add a script in your `package.json` for convenience:
 ```json
 {
   "scripts": {
-    "analyze-bundles": "compsizer --config path/to/your-config-file.json"
+    "analyse-component-bundles": "compsizer --config path/to/your-config-file.json"
   }
 }
 ```
@@ -55,7 +55,7 @@ You can add a script in your `package.json` for convenience:
 Then run it via:
 
 ```bash
-npm run analyze-bundles
+npm run analyse-component-bundles
 ```
 
 ## Configuration
@@ -76,13 +76,13 @@ You need to create a configuration file (default: `bundle-size.config.json`) tha
     "Button": {
       "maxSize": "20KB",
       "warnOnIncrease": "5%",
-      "include": ["src/components/Button/**/*.js"],
+      "include": ["src/components/Button/dist/**/*.js"],
       "exclude": []
     },
     "Modal": {
       "maxSize": "50KB",
       "warnOnIncrease": "10%",
-      "include": ["src/components/Modal/**/*.js"],
+      "include": ["src/components/Modal/dist/**/*.js"],
       "exclude": []
     }
   },
