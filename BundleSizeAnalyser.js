@@ -83,8 +83,7 @@ class BundleSizeAnalyser {
 
         for (const filePath of filePaths) {
             const fileContent = await this.fs.readFile(filePath);
-            const fileSize = fileContent.length;
-            totalSize += fileSize;
+            totalSize += fileContent.length;
 
             if (compression.gzip) {
                 totalGzipSize += await this.gzipSize(fileContent);
@@ -252,18 +251,18 @@ class BundleSizeAnalyser {
      * @param {Object} config - The configuration object for the components.
      */
     async analyseComponents(config) {
-        const { include, exclude, compression, baselineFile, components, defaults } = config;
+        const { exclude, compression, baselineFile, components, defaults } = config;
         const baselineSizes = await this.loadBaseline(baselineFile);
 
         for (const [componentName, componentConfig] of Object.entries(components)) {
             const {
                 maxSize,
                 warnOnIncrease = defaults.warnOnIncrease || '5%',
-                include: componentInclude = include,
-                exclude: componentExclude = exclude,
+                include,
+                exclude: componentExclude = exclude
             } = componentConfig;
 
-            const includePatterns = Array.isArray(componentInclude) ? componentInclude : [componentInclude];
+            const includePatterns = Array.isArray(include) ? include : [include];
             const excludePatterns = Array.isArray(componentExclude) ? componentExclude : [componentExclude];
 
             const filePaths = await this.collectFiles(includePatterns, excludePatterns);
