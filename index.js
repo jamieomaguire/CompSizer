@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 
 (async () => {
     const program = new Command();
-    program.option('-c, --config <path>', 'Path to configuration file', 'bundle-size.config.json');
+    program.option('-c, --config <path>', 'Path to configuration file', 'compsizer.config.json');
     program.parse(process.argv);
 
     const options = program.opts();

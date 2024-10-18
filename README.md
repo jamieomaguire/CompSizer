@@ -26,7 +26,7 @@ You can run the tool from the command line either with the default configuration
 
 ### Default Command
 
-If you use the default configuration file name `bundle-size.config.json`, simply run:
+If you use the default configuration file name `compsizer.config.json`, simply run:
 
 ```bash
 npx compsizer
@@ -60,9 +60,9 @@ npm run analyse-component-bundles
 
 ## Configuration
 
-You need to create a configuration file (default: `bundle-size.config.json`) that specifies the inclusion/exclusion patterns for files, size limits, and compression options.
+You need to create a configuration file (default: `compsizer.config.json`) that specifies the inclusion/exclusion patterns for files, size limits, and compression options.
 
-### Example Configuration (`bundle-size.config.json`)
+### Example Configuration (`compsizer.config.json`)
 
 ```json
 {
