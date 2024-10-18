@@ -1,44 +1,20 @@
-/**
- * Class representing a Bundle Size Analyser.
- * Analyses the bundle sizes of components, checks them against a baseline, and verifies if they exceed size limits.
- */
 class BundleSizeAnalyser {
-    /**
-     * Constructs the BundleSizeAnalyser class.
-     * @param {Object} fs - The file system module for reading and writing files.
-     * @param {Object} path - The path module for file path resolution.
-     * @param {Function} glob - A glob function to match file patterns.
-     * @param {Function} gzipSize - Function to calculate the size of files when gzipped.
-     * @param {Object} brotliSize - Module to calculate the size of files when Brotli compressed.
-     * @param {Object} chalk - Module for coloured terminal output.
-     */
     constructor(fs, path, glob, gzipSize, brotliSize, chalk) {
         this.fs = fs;
         this.path = path;
         this.glob = glob;
-        this.gzipSize = gzipSize;
-        this.brotliSize = brotliSize;
+        this.gzipSize = gzipSize;  // This is now an injected function
+        this.brotliSize = brotliSize;  // This is also an injected function
         this.chalk = chalk;
         this.results = {};
         this.hasWarnings = false;
     }
 
-    /**
-     * Loads the configuration JSON from the specified path.
-     * @param {string} configPath - The path to the configuration file.
-     * @returns {Promise<Object>} The parsed JSON configuration.
-     */
     async loadConfig(configPath) {
         const configContent = await this.fs.readFile(configPath, 'utf8');
         return JSON.parse(configContent);
     }
 
-    /**
-     * Loads the baseline sizes from the baseline file.
-     * If the baseline file does not exist, returns an empty object.
-     * @param {string} baselineFile - The path to the baseline file.
-     * @returns {Promise<Object>} The parsed JSON baseline sizes.
-     */
     async loadBaseline(baselineFile) {
         const baselinePath = this.path.resolve(process.cwd(), baselineFile);
         try {
@@ -49,50 +25,68 @@ class BundleSizeAnalyser {
         }
     }
 
-    /**
-     * Collects all file paths that match the inclusion patterns and do not match the exclusion patterns.
-     * @param {string[]} includePatterns - File patterns to include.
-     * @param {string[]} excludePatterns - File patterns to exclude.
-     * @returns {Promise<string[]>} A list of unique file paths.
-     */
     async collectFiles(includePatterns, excludePatterns) {
-        let filePaths = [];
-        for (const pattern of includePatterns) {
-            const files = await this.glob(pattern);
-            filePaths.push(...files);
-        }
+        const [includeFiles, excludeFiles] = await Promise.all([
+            Promise.all(includePatterns.map(pattern => this.glob(pattern))),
+            Promise.all(excludePatterns.map(pattern => this.glob(pattern))),
+        ]);
 
-        for (const pattern of excludePatterns) {
-            const files = await this.glob(pattern);
-            filePaths = filePaths.filter((file) => !files.includes(file));
-        }
+        const allFiles = new Set(includeFiles.flat());
+        const excludeSet = new Set(excludeFiles.flat());
 
-        return [...new Set(filePaths)]; // Remove duplicates
+        return [...allFiles].filter(file => !excludeSet.has(file));
     }
 
-    /**
-     * Calculates the size of the given files, along with gzip and Brotli compressed sizes.
-     * @param {string[]} filePaths - A list of file paths to analyze.
-     * @param {Object} compression - An object specifying whether to calculate gzip and Brotli sizes.
-     * @returns {Promise<Object>} An object containing total, gzip, and Brotli sizes in KB.
-     */
-    async calculateSizes(filePaths, compression) {
-        let totalSize = 0;
-        let totalGzipSize = 0;
-        let totalBrotliSize = 0;
+    async batchReadFiles(filePaths) {
+        const fileContents = await Promise.all(filePaths.map((filePath) => this.fs.readFile(filePath)));
+        return fileContents;
+    }
 
-        for (const filePath of filePaths) {
-            const fileContent = await this.fs.readFile(filePath);
-            totalSize += fileContent.length;
+    async calculateGzipSize(fileContent) {
+        try {
+            return await this.gzipSize(fileContent);
+        } catch (error) {
+            throw new Error(`Gzip compression failed: ${error.message}`);
+        }
+    }
+
+    async calculateBrotliSize(fileContent) {
+        try {
+            return await this.brotliSize(fileContent);
+        } catch (error) {
+            throw new Error(`Brotli compression failed: ${error.message}`);
+        }
+    }
+
+    async calculateSizes(filePaths, compression) {
+        const fileContents = await this.batchReadFiles(filePaths);  // Read all files in parallel
+
+        const sizePromises = fileContents.map(async (fileContent, index) => {
+            const fileSize = fileContent.length;
+            let gzipSize = 0;
+            let brotliSize = 0;
 
             if (compression.gzip) {
-                totalGzipSize += await this.gzipSize(fileContent);
+                gzipSize = await this.gzipSize(fileContent);
             }
 
             if (compression.brotli) {
-                totalBrotliSize += this.brotliSize.sync(fileContent);
+                brotliSize = await this.brotliSize(fileContent);
             }
-        }
+
+            return {
+                fileSize,
+                gzipSize,
+                brotliSize
+            };
+        });
+
+        const results = await Promise.all(sizePromises);
+
+        // Aggregate results
+        const totalSize = results.reduce((acc, result) => acc + result.fileSize, 0);
+        const totalGzipSize = results.reduce((acc, result) => acc + result.gzipSize, 0);
+        const totalBrotliSize = results.reduce((acc, result) => acc + result.brotliSize, 0);
 
         return {
             totalSizeKB: totalSize / 1024,
@@ -101,14 +95,6 @@ class BundleSizeAnalyser {
         };
     }
 
-    /**
-     * Compares the current component size with the baseline and thresholds.
-     * @param {Object} result - The calculated sizes.
-     * @param {string} componentName - The name of the component.
-     * @param {Object} baselineSizes - The baseline sizes to compare against.
-     * @param {Object} config - Configuration settings for the component (e.g., max size).
-     * @returns {Object} The result object augmented with comparison information.
-     */
     compareSizes(result, componentName, baselineSizes, config) {
         const { maxSize, warnOnIncrease } = config;
         const maxSizeValue = this.parseSize(maxSize);
@@ -146,9 +132,6 @@ class BundleSizeAnalyser {
         };
     }
 
-    /**
-     * Outputs the results of the bundle size analysis to the console.
-     */
     outputResults() {
         console.log(this.chalk.bold('\Component Bundle Sizes Report\n'));
         for (const [componentName, result] of Object.entries(this.results)) {
@@ -196,10 +179,6 @@ class BundleSizeAnalyser {
         }
     }
 
-    /**
-     * Updates the baseline file with the new component sizes.
-     * @param {string} baselineFile - The path to the baseline file.
-     */
     async updateBaseline(baselineFile) {
         const baselinePath = this.path.resolve(process.cwd(), baselineFile);
         const newBaselineSizes = {};
@@ -209,11 +188,6 @@ class BundleSizeAnalyser {
         await this.fs.writeFile(baselinePath, JSON.stringify(newBaselineSizes, null, 2));
     }
 
-    /**
-     * Parses a size string (e.g., '5MB', '500KB') into bytes.
-     * @param {string} sizeStr - The size string to parse.
-     * @returns {number|null} The size in bytes, or null if the format is invalid.
-     */
     parseSize(sizeStr) {
         if (typeof sizeStr !== 'string') return null;
         const match = sizeStr.trim().match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB)?$/i);
@@ -232,11 +206,6 @@ class BundleSizeAnalyser {
         }
     }
 
-    /**
-     * Parses a percentage string (e.g., '5%') into a float value.
-     * @param {string} percentageStr - The percentage string to parse.
-     * @returns {number|null} The percentage value, or null if the format is invalid.
-     */
     parsePercentage(percentageStr) {
         if (typeof percentageStr !== 'string') return null;
         const match = percentageStr.trim().match(/^(\d+(?:\.\d+)?)\s*%$/);
@@ -244,12 +213,6 @@ class BundleSizeAnalyser {
         return parseFloat(match[1]);
     }
 
-    /**
-     * Analyses the sizes of the components defined in the configuration.
-     * Compares the sizes against the baseline and outputs the results.
-     * Updates the baseline with new sizes if necessary.
-     * @param {Object} config - The configuration object for the components.
-     */
     async analyseComponents(config) {
         const { exclude, compression, baselineFile, components, defaults } = config;
         const baselineSizes = await this.loadBaseline(baselineFile);
@@ -265,15 +228,59 @@ class BundleSizeAnalyser {
             const includePatterns = Array.isArray(include) ? include : [include];
             const excludePatterns = Array.isArray(componentExclude) ? componentExclude : [componentExclude];
 
-            const filePaths = await this.collectFiles(includePatterns, excludePatterns);
-            const sizeResults = await this.calculateSizes(filePaths, compression);
+            const allJsFiles = await this.collectFiles(includePatterns, excludePatterns);
 
-            this.results[componentName] = this.compareSizes(
-                sizeResults,
-                componentName,
+            // Filter in-memory for index.js, react.js, and other JS files
+            const indexJsFiles = allJsFiles.filter(file => file.endsWith('index.js'));
+            const reactJsFiles = allJsFiles.filter(file => file.endsWith('react.js'));
+            const otherJsFiles = allJsFiles.filter(file => !file.endsWith('index.js') && !file.endsWith('react.js'));
+
+            // Calculate sizes for index.js
+            const indexJsSizeResults = await this.calculateSizes(indexJsFiles, compression);
+            this.results[`${componentName}/index.js`] = this.compareSizes(
+                indexJsSizeResults,
+                `${componentName}/index.js`,
                 baselineSizes,
                 { maxSize, warnOnIncrease }
             );
+
+            // Calculate sizes for index.js + react.js + other JS files, or just index.js + react.js if no other JS files
+            if (reactJsFiles.length > 0) {
+                const indexReactFiles = [...indexJsFiles, ...reactJsFiles];
+                const indexReactOtherFiles = [...indexJsFiles, ...reactJsFiles, ...otherJsFiles];
+
+                if (otherJsFiles.length > 0) {
+                    // Include other JS files
+                    const indexReactOtherSizeResults = await this.calculateSizes(indexReactOtherFiles, compression);
+                    this.results[`${componentName}/index.js + react.js + other JS`] = this.compareSizes(
+                        indexReactOtherSizeResults,
+                        `${componentName}/index.js + react.js + other JS`,
+                        baselineSizes,
+                        { maxSize, warnOnIncrease }
+                    );
+                } else {
+                    // Just index.js + react.js
+                    const indexReactSizeResults = await this.calculateSizes(indexReactFiles, compression);
+                    this.results[`${componentName}/index.js + react.js`] = this.compareSizes(
+                        indexReactSizeResults,
+                        `${componentName}/index.js + react.js`,
+                        baselineSizes,
+                        { maxSize, warnOnIncrease }
+                    );
+                }
+            }
+
+            // Calculate sizes for index.js + other JS files (excluding react.js) if there are other JS files
+            if (otherJsFiles.length > 0) {
+                const indexOtherFiles = [...indexJsFiles, ...otherJsFiles];
+                const indexOtherSizeResults = await this.calculateSizes(indexOtherFiles, compression);
+                this.results[`${componentName}/index.js + other JS`] = this.compareSizes(
+                    indexOtherSizeResults,
+                    `${componentName}/index.js + other JS`,
+                    baselineSizes,
+                    { maxSize, warnOnIncrease }
+                );
+            }
         }
 
         this.outputResults();
@@ -281,10 +288,10 @@ class BundleSizeAnalyser {
 
         if (this.hasWarnings) {
             console.error(this.chalk.red('One or more components exceeded size thresholds.'));
-            process.exit(1);
+            return false;
         } else {
             console.log(this.chalk.green('All components are within size thresholds.'));
-            process.exit(0);
+            return true;
         }
     }
 }
