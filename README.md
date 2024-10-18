@@ -1,4 +1,3 @@
-
 # CompSizer
 
 CompSizer is a tool designed to analyze the size of component bundles in your project. It helps you ensure your component sizes are within acceptable limits by comparing them against baselines and showing size increases across builds. You can also configure gzip and Brotli compression checks.
