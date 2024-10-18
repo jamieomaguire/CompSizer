@@ -1,4 +1,17 @@
+/**
+ * Class representing a Bundle Size Analyser.
+ * Analyses the bundle sizes of components, checks them against a baseline, and verifies if they exceed size limits.
+ */
 class BundleSizeAnalyser {
+    /**
+     * Constructs the BundleSizeAnalyser class.
+     * @param {Object} fs - The file system module for reading and writing files.
+     * @param {Object} path - The path module for file path resolution.
+     * @param {Function} glob - A glob function to match file patterns.
+     * @param {Function} gzipSize - Function to calculate the size of files when gzipped.
+     * @param {Object} brotliSize - Module to calculate the size of files when Brotli compressed.
+     * @param {Object} chalk - Module for coloured terminal output.
+     */
     constructor(fs, path, glob, gzipSize, brotliSize, chalk) {
         this.fs = fs;
         this.path = path;
@@ -10,11 +23,22 @@ class BundleSizeAnalyser {
         this.hasWarnings = false;
     }
 
+    /**
+     * Loads the configuration JSON from the specified path.
+     * @param {string} configPath - The path to the configuration file.
+     * @returns {Promise<Object>} The parsed JSON configuration.
+     */
     async loadConfig(configPath) {
         const configContent = await this.fs.readFile(configPath, 'utf8');
         return JSON.parse(configContent);
     }
 
+    /**
+     * Loads the baseline sizes from the baseline file.
+     * If the baseline file does not exist, returns an empty object.
+     * @param {string} baselineFile - The path to the baseline file.
+     * @returns {Promise<Object>} The parsed JSON baseline sizes.
+     */
     async loadBaseline(baselineFile) {
         const baselinePath = this.path.resolve(process.cwd(), baselineFile);
         try {
@@ -25,6 +49,12 @@ class BundleSizeAnalyser {
         }
     }
 
+    /**
+     * Collects all file paths that match the inclusion patterns and do not match the exclusion patterns.
+     * @param {string[]} includePatterns - File patterns to include.
+     * @param {string[]} excludePatterns - File patterns to exclude.
+     * @returns {Promise<string[]>} A list of unique file paths.
+     */
     async collectFiles(includePatterns, excludePatterns) {
         let filePaths = [];
         for (const pattern of includePatterns) {
@@ -40,6 +70,12 @@ class BundleSizeAnalyser {
         return [...new Set(filePaths)]; // Remove duplicates
     }
 
+    /**
+     * Calculates the size of the given files, along with gzip and Brotli compressed sizes.
+     * @param {string[]} filePaths - A list of file paths to analyze.
+     * @param {Object} compression - An object specifying whether to calculate gzip and Brotli sizes.
+     * @returns {Promise<Object>} An object containing total, gzip, and Brotli sizes in KB.
+     */
     async calculateSizes(filePaths, compression) {
         let totalSize = 0;
         let totalGzipSize = 0;
@@ -66,6 +102,14 @@ class BundleSizeAnalyser {
         };
     }
 
+    /**
+     * Compares the current component size with the baseline and thresholds.
+     * @param {Object} result - The calculated sizes.
+     * @param {string} componentName - The name of the component.
+     * @param {Object} baselineSizes - The baseline sizes to compare against.
+     * @param {Object} config - Configuration settings for the component (e.g., max size).
+     * @returns {Object} The result object augmented with comparison information.
+     */
     compareSizes(result, componentName, baselineSizes, config) {
         const { maxSize, warnOnIncrease } = config;
         const maxSizeValue = this.parseSize(maxSize);
@@ -103,6 +147,9 @@ class BundleSizeAnalyser {
         };
     }
 
+    /**
+     * Outputs the results of the bundle size analysis to the console.
+     */
     outputResults() {
         console.log(this.chalk.bold('\nBundle Size Analyser Report\n'));
         for (const [componentName, result] of Object.entries(this.results)) {
@@ -150,6 +197,10 @@ class BundleSizeAnalyser {
         }
     }
 
+    /**
+     * Updates the baseline file with the new component sizes.
+     * @param {string} baselineFile - The path to the baseline file.
+     */
     async updateBaseline(baselineFile) {
         const baselinePath = this.path.resolve(process.cwd(), baselineFile);
         const newBaselineSizes = {};
@@ -159,6 +210,11 @@ class BundleSizeAnalyser {
         await this.fs.writeFile(baselinePath, JSON.stringify(newBaselineSizes, null, 2));
     }
 
+    /**
+     * Parses a size string (e.g., '5MB', '500KB') into bytes.
+     * @param {string} sizeStr - The size string to parse.
+     * @returns {number|null} The size in bytes, or null if the format is invalid.
+     */
     parseSize(sizeStr) {
         if (typeof sizeStr !== 'string') return null;
         const match = sizeStr.trim().match(/^(\d+(?:\.\d+)?)\s*(B|KB|MB)?$/i);
@@ -177,6 +233,11 @@ class BundleSizeAnalyser {
         }
     }
 
+    /**
+     * Parses a percentage string (e.g., '5%') into a float value.
+     * @param {string} percentageStr - The percentage string to parse.
+     * @returns {number|null} The percentage value, or null if the format is invalid.
+     */
     parsePercentage(percentageStr) {
         if (typeof percentageStr !== 'string') return null;
         const match = percentageStr.trim().match(/^(\d+(?:\.\d+)?)\s*%$/);
@@ -184,6 +245,12 @@ class BundleSizeAnalyser {
         return parseFloat(match[1]);
     }
 
+    /**
+     * Analyses the sizes of the components defined in the configuration.
+     * Compares the sizes against the baseline and outputs the results.
+     * Updates the baseline with new sizes if necessary.
+     * @param {Object} config - The configuration object for the components.
+     */
     async analyseComponents(config) {
         const { include, exclude, compression, baselineFile, components, defaults } = config;
         const baselineSizes = await this.loadBaseline(baselineFile);
