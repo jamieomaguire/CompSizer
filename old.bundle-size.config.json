@@ -1,0 +1,32 @@
+{
+    "include": [
+        "packages/*/dist/**/*.js"
+    ],
+    "exclude": [
+        "**/*.d.ts"
+    ],
+    "compression": {
+        "gzip": true,
+        "brotli": true
+    },
+    "baselineFile": "bundle-sizes.json",
+    "components": {
+        "button": {
+            "maxSize": "30 KB",
+            "warnOnIncrease": "10%",
+            "include": [
+                "../pie/packages/components/pie-button/dist/**/*.js"
+            ]
+        },
+        "modal": {
+            "maxSize": "30 KB",
+            "warnOnIncrease": "10%",
+            "include": [
+                "../pie/packages/components/pie-modal/dist/**/*.js"
+            ]
+        }
+    },
+    "defaults": {
+        "warnOnIncrease": "5%"
+    }
+}
