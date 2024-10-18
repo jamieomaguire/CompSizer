@@ -1,22 +1,18 @@
 {
   "name": "compsizer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A tool for analysing the size of component packages in your monorepo.",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "bin": {
-    "compsizer": "./index.js"
-  },
+  "bin": "./index.js",
   "author": "Jamie Maguire",
   "license": "MIT",
   "dependencies": {
-    "brotli-size": "4.0.0",
     "chalk": "5.3.0",
     "commander": "12.1.0",
-    "glob": "11.0.0",
-    "gzip-size": "7.0.0"
+    "glob": "11.0.0"
   }
 }

@@ -2,20 +2,38 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { glob } from 'glob';
 import { Command } from 'commander';
-import { gzipSize } from 'gzip-size';
-import { createRequire } from 'module';
 import chalk from 'chalk';
+import zlib from 'zlib';
 import BundleSizeAnalyser from './BundleSizeAnalyser.js';
 
-const require = createRequire(import.meta.url);
-const brotliSize = require('brotli-size');
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+async function calculateGzipSize(fileContent) {
+    return new Promise((resolve, reject) => {
+        zlib.gzip(fileContent, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result.length);
+            }
+        });
+    });
+}
+
+async function calculateBrotliSize(fileContent) {
+    return new Promise((resolve, reject) => {
+        zlib.brotliCompress(fileContent, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result.length);
+            }
+        });
+    });
+}
 
 (async () => {
+    const startTime = Date.now();  // Capture the start time
     const program = new Command();
     program.option('-c, --config <path>', 'Path to configuration file', 'compsizer.config.json');
     program.parse(process.argv);
@@ -24,9 +42,17 @@ const __dirname = path.dirname(__filename);
     const configPath = path.resolve(process.cwd(), options.config); // Resolve config relative to the user's project
 
     try {
-        const analyser = new BundleSizeAnalyser(fs, path, glob, gzipSize, brotliSize, chalk);
+        const analyser = new BundleSizeAnalyser(fs, path, glob, calculateGzipSize, calculateBrotliSize, chalk);
         const config = await analyser.loadConfig(configPath);
-        await analyser.analyseComponents(config);
+        const success = await analyser.analyseComponents(config);  // Capture success/failure
+        const endTime = Date.now();  // Capture the end time
+        const duration = (endTime - startTime) / 1000;  // Calculate duration in seconds
+
+        console.log(chalk.green.bold(`\ncompsizer analysis took: ${duration.toFixed(2)} seconds\n`));
+
+        // Exit based on the success status
+        process.exit(success ? 0 : 1);
+
     } catch (error) {
         console.error(chalk.red('Error:'), error.message);
         process.exit(1);
