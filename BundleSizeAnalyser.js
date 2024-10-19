@@ -1,13 +1,36 @@
 class BundleSizeAnalyser {
-    constructor(fs, path, glob, gzipSize, brotliSize, chalk) {
+    constructor(fs, path, glob, zlib, chalk) {
         this.fs = fs;
         this.path = path;
         this.glob = glob;
-        this.gzipSize = gzipSize;  // This is now an injected function
-        this.brotliSize = brotliSize;  // This is also an injected function
+        this.zlib = zlib;
         this.chalk = chalk;
         this.results = {};
         this.hasWarnings = false;
+    }
+
+    async calculateGzipSize(fileContent) {
+        return new Promise((resolve, reject) => {
+            this.zlib.gzip(fileContent, (err, result) => {
+                if (err) {
+                    reject(new Error(`Gzip compression failed: ${err.message}`));
+                } else {
+                    resolve(result.length);
+                }
+            });
+        });
+    }
+
+    async calculateBrotliSize(fileContent) {
+        return new Promise((resolve, reject) => {
+            this.zlib.brotliCompress(fileContent, (err, result) => {
+                if (err) {
+                    reject(new Error(`Brotli compression failed: ${err.message}`));
+                } else {
+                    resolve(result.length);
+                }
+            });
+        });
     }
 
     async loadConfig(configPath) {
@@ -42,22 +65,6 @@ class BundleSizeAnalyser {
         return fileContents;
     }
 
-    async calculateGzipSize(fileContent) {
-        try {
-            return await this.gzipSize(fileContent);
-        } catch (error) {
-            throw new Error(`Gzip compression failed: ${error.message}`);
-        }
-    }
-
-    async calculateBrotliSize(fileContent) {
-        try {
-            return await this.brotliSize(fileContent);
-        } catch (error) {
-            throw new Error(`Brotli compression failed: ${error.message}`);
-        }
-    }
-
     async calculateSizes(filePaths, compression) {
         const fileContents = await this.batchReadFiles(filePaths);  // Read all files in parallel
 
@@ -67,11 +74,11 @@ class BundleSizeAnalyser {
             let brotliSize = 0;
 
             if (compression.gzip) {
-                gzipSize = await this.gzipSize(fileContent);
+                gzipSize = await this.calculateGzipSize(fileContent);
             }
 
             if (compression.brotli) {
-                brotliSize = await this.brotliSize(fileContent);
+                brotliSize = await this.calculateBrotliSize(fileContent);
             }
 
             return {
@@ -221,14 +228,32 @@ class BundleSizeAnalyser {
             const {
                 maxSize,
                 warnOnIncrease = defaults.warnOnIncrease || '5%',
-                include,
+                distFolderLocation,
                 exclude: componentExclude = exclude
             } = componentConfig;
 
-            const includePatterns = Array.isArray(include) ? include : [include];
+            // Resolve the dist folder path
+            if (!distFolderLocation) {
+                throw new Error(`Error: distFolderLocation is not defined for component: ${componentName}`);
+            }
+
+            const distFolderPath = this.path.resolve(process.cwd(), distFolderLocation);
+
+            // Check if the folder exists before proceeding
+            try {
+                await this.fs.access(distFolderPath);
+            } catch (err) {
+                console.error(this.chalk.red(`Error: distFolderLocation ${distFolderPath} not found for component: ${componentName}`));
+                throw new Error(`Dist folder not found for component: ${componentName}`);
+            }
+
+            const includePattern = `${distFolderPath}/**/*.js`; // Automatically include all JS files in the folder
+
+            // Handle exclusion patterns
             const excludePatterns = Array.isArray(componentExclude) ? componentExclude : [componentExclude];
 
-            const allJsFiles = await this.collectFiles(includePatterns, excludePatterns);
+            // Collect all JS files from the folder, excluding specified patterns
+            const allJsFiles = await this.collectFiles([includePattern], excludePatterns);
 
             // Filter in-memory for index.js, react.js, and other JS files
             const indexJsFiles = allJsFiles.filter(file => file.endsWith('index.js'));
@@ -294,6 +319,7 @@ class BundleSizeAnalyser {
             return true;
         }
     }
+
 }
 
 export default BundleSizeAnalyser;
