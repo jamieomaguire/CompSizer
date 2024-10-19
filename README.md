@@ -64,6 +64,8 @@ npm run analyse-component-bundles
 
 Each component package should have its own configuration file to specify the inclusion/exclusion patterns for files, size limits, and compression options.
 
+**Note:** You can choose to place a single configuration file at the root of your repository and list all of your components in the `components` property together. However, please be aware that depending on how many components you add, it could take a while to generate the size reports for all of them at once.
+
 ### Example Configuration (placed in each component package, e.g., `modal/compsizer.config.json`)
 
 ```json
@@ -80,15 +82,13 @@ Each component package should have its own configuration file to specify the inc
     "modal": {
       "maxSize": "50 KB",
       "warnOnIncrease": "10%",
-      "include": [
-        "./dist/**/*.js"
-      ]
-    }
+      "distFolderLocation": "./dist"
+    },
+    // You could add more components here if placing this config at the root of your project.
   },
   "defaults": {
     "warnOnIncrease": "5%"
   }
-}
 ```
 
 ### Configuration Fields
@@ -101,7 +101,7 @@ Each component package should have its own configuration file to specify the inc
 - **components**: (object) Configuration for each component. Each key corresponds to a component name.
   - `maxSize`: (string) The maximum allowable size for the component (e.g., `50KB`, `500KB`).
   - `warnOnIncrease`: (string) Warn if the size increases by more than the specified percentage.
-  - `include`: (array) Glob patterns specific to the component to include.
+  - `distFolderLocation`: (string) Path pointing to the built component files.
   - `exclude`: (array) Glob patterns specific to the component to exclude. (Overrides the base `exclude`)
 - **defaults**: (object) Default settings that apply to all components.
   - `warnOnIncrease`: (string) Default warning threshold for size increases.
