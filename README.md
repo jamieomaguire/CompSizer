@@ -3,6 +3,17 @@
 
 `compsizer` is a tool designed to analyse the size of component bundles in your project. It helps you ensure that your component sizes are within acceptable limits by comparing them against baselines and showing size increases across builds. You can also configure gzip and Brotli compression checks.
 
+Currently this package is designed for component libraries with the following dist folder structure for each component package:
+
+```
+/dist
+| - index.js          <- main component file
+| - index.d.ts        <- type declaration
+| - react.js          <- a react compatible export
+| - react.d.ts        <- type declaration
+| - someOtherFile.js  <- any number of other JS files, likely polyfills
+```
+
 ## Features
 
 - Analyse the size of individual component bundles.
@@ -115,7 +126,6 @@ The configuration file (e.g., `compsizer.config.json`) should be added to **each
 The tool generates a report of the component sizes, whether they exceed limits, and how they compare to baseline sizes. It also updates the baseline file after each run.
 
 ### Report Explanation
-
 The report provides detailed size breakdowns for each component, including:
 
 - **index.js size**: The size of the component’s `index.js` file.
