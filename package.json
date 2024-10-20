@@ -1,9 +1,13 @@
 {
   "name": "compsizer",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "A tool for analysing the size of component packages in your monorepo.",
   "type": "module",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jamieomaguire/CompSizer"
+  },
   "scripts": {
     "create-test-files": "node test/genfiles.js",
     "test": "vitest"
