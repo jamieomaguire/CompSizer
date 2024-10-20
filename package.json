@@ -5,7 +5,8 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "create-test-files": "node test/genfiles.js",
+    "test": "vitest"
   },
   "bin": "./index.js",
   "author": "Jamie Maguire",
@@ -14,5 +15,11 @@
     "chalk": "5.3.0",
     "commander": "12.1.0",
     "glob": "11.0.0"
+  },
+  "volta": {
+    "node": "20.18.0"
+  },
+  "devDependencies": {
+    "vitest": "2.1.3"
   }
 }
