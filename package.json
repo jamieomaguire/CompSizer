@@ -1,6 +1,6 @@
 {
   "name": "compsizer",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "A tool for analysing the size of component packages in your monorepo.",
   "type": "module",
   "main": "index.js",
