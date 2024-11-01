@@ -244,7 +244,14 @@ class BundleSizeAnalyser {
     }
 
     async analyseComponents(config) {
-        const { exclude, compression, baselineFile, components, defaults } = config;
+        const { exclude, compression = {}, baselineFile, components, defaults } = config;
+        
+        // Set default compression values to true if not provided
+        const compressionOptions = {
+            gzip: compression.gzip !== undefined ? compression.gzip : true,
+            brotli: compression.brotli !== undefined ? compression.brotli : true,
+        };
+        
         const baselineSizes = await this.loadBaseline(baselineFile);
 
         for (const [componentName, componentConfig] of Object.entries(components)) {
@@ -274,7 +281,7 @@ class BundleSizeAnalyser {
             const reactJsFiles = allJsFiles.filter(file => file.endsWith('react.js'));
             const otherJsFiles = allJsFiles.filter(file => !file.endsWith('index.js') && !file.endsWith('react.js'));
 
-            const indexJsSizeResults = await this.calculateSizes(indexJsFiles, compression);
+            const indexJsSizeResults = await this.calculateSizes(indexJsFiles, compressionOptions);
             this.results[`${componentName}/index.js`] = this.compareSizes(
                 indexJsSizeResults,
                 `${componentName}/index.js`,
@@ -311,7 +318,7 @@ class BundleSizeAnalyser {
             // Calculate sizes for index.js + other JS files (excluding react.js) if there are other JS files
             if (otherJsFiles.length > 0) {
                 const indexOtherFiles = [...indexJsFiles, ...otherJsFiles];
-                const indexOtherSizeResults = await this.calculateSizes(indexOtherFiles, compression);
+                const indexOtherSizeResults = await this.calculateSizes(indexOtherFiles, compressionOptions);
                 this.results[`${componentName}/index.js + other JS`] = this.compareSizes(
                     indexOtherSizeResults,
                     `${componentName}/index.js + other JS`,

@@ -84,7 +84,7 @@ Each component package should have its own configuration file to specify the inc
   "exclude": [
     "**/*.d.ts"
   ],
-  "compression": {
+  "compression": { // Optional compression options
     "gzip": true,
     "brotli": true
   },
@@ -107,8 +107,8 @@ Each component package should have its own configuration file to specify the inc
 
 - **exclude**: (array) Glob patterns to exclude certain files from analysis.
 - **compression**: (object) Specify whether to calculate gzip and Brotli compressed sizes.
-  - `gzip`: (boolean) Set to `true` to calculate gzip sizes.
-  - `brotli`: (boolean) Set to `true` to calculate Brotli sizes.
+  - `gzip`: (boolean) OPTIONAL: Set to `true` to calculate gzip sizes (defaults to true).
+  - `brotli`: (boolean) OPTIONAL: Set to `true` to calculate Brotli sizes (defaults to true).
 - **baselineFile**: (string) Path to the JSON file where the baseline sizes are stored.
 - **components**: (object) Configuration for each component. Each key corresponds to a component name.
   - `maxSize`: (string) The maximum allowable size for the component (e.g., `50KB`, `500KB`).

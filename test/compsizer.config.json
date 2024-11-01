@@ -2,10 +2,6 @@
   "exclude": [
     "**/*.d.ts"
   ],
-  "compression": {
-    "gzip": true,
-    "brotli": true
-  },
   "components": {
     "testComponent": {
       "maxSize": "96 KB",
