@@ -40,6 +40,7 @@ class BundleSizeAnalyser {
     }
 
     async loadBaseline(baselineFile) {
+        if (!baselineFile) return null;
         const baselinePath = this.path.resolve(process.cwd(), baselineFile);
         try {
             const baselineContent = await this.fs.readFile(baselinePath, 'utf8');
@@ -67,7 +68,7 @@ class BundleSizeAnalyser {
     }
 
     async calculateSizes(filePaths, compression) {
-        const fileContents = await this.batchReadFiles(filePaths);  // Read all files in parallel
+        const fileContents = await this.batchReadFiles(filePaths);
 
         const sizePromises = fileContents.map(async (fileContent, index) => {
             const fileSize = fileContent.length;
@@ -91,7 +92,6 @@ class BundleSizeAnalyser {
 
         const results = await Promise.all(sizePromises);
 
-        // Aggregate results
         const totalSize = results.reduce((acc, result) => acc + result.fileSize, 0);
         const totalGzipSize = results.reduce((acc, result) => acc + result.gzipSize, 0);
         const totalBrotliSize = results.reduce((acc, result) => acc + result.brotliSize, 0);
@@ -104,7 +104,7 @@ class BundleSizeAnalyser {
     }
 
     compareSizes(result, componentName, baselineSizes, config) {
-        const { maxSize, warnOnIncrease } = config;
+        const { maxSize, warnOnIncrease = null } = config;
         const maxSizeValue = this.parseSize(maxSize);
 
         const exceedsMaxSize = maxSizeValue !== null && result.totalSizeKB * 1024 > maxSizeValue;
@@ -117,22 +117,28 @@ class BundleSizeAnalyser {
             });
         }
 
-        const previousSize = baselineSizes[componentName] || 0;
-        const sizeIncrease = result.totalSizeKB * 1024 - previousSize;
-        const percentageIncrease = previousSize
-            ? ((sizeIncrease / previousSize) * 100).toFixed(2)
-            : 'N/A';
-
+        let sizeIncrease = 0;
+        let percentageIncrease = 'N/A';
         let exceedsWarnIncrease = false;
-        if (previousSize && warnOnIncrease) {
-            const warnIncreaseValue = this.parsePercentage(warnOnIncrease);
-            if (
-                warnIncreaseValue !== null &&
-                percentageIncrease !== 'N/A' &&
-                percentageIncrease > warnIncreaseValue
-            ) {
-                exceedsWarnIncrease = true;
-                this.hasWarnings = true;
+
+        // Only perform baseline comparisons if baselineSizes is provided
+        if (baselineSizes) {
+            const previousSize = baselineSizes[componentName] || 0;
+            sizeIncrease = result.totalSizeKB * 1024 - previousSize;
+            percentageIncrease = previousSize
+                ? ((sizeIncrease / previousSize) * 100).toFixed(2)
+                : 'N/A';
+
+            if (previousSize && warnOnIncrease) {
+                const warnIncreaseValue = this.parsePercentage(warnOnIncrease);
+                if (
+                    warnIncreaseValue !== null &&
+                    percentageIncrease !== 'N/A' &&
+                    percentageIncrease > warnIncreaseValue
+                ) {
+                    exceedsWarnIncrease = true;
+                    this.hasWarnings = true;
+                }
             }
         }
 
@@ -143,7 +149,7 @@ class BundleSizeAnalyser {
             sizeIncreaseKB: sizeIncrease / 1024,
             percentageIncrease,
             exceedsWarnIncrease,
-            warnOnIncrease,
+            warnOnIncrease: baselineSizes ? warnOnIncrease : null,
         };
     }
 
@@ -203,10 +209,11 @@ class BundleSizeAnalyser {
     }
 
     async updateBaseline(baselineFile) {
+        if (!baselineFile) return;
         const baselinePath = this.path.resolve(process.cwd(), baselineFile);
         const newBaselineSizes = {};
         for (const [componentName, result] of Object.entries(this.results)) {
-            newBaselineSizes[componentName] = result.totalSizeKB * 1024; // Store in bytes
+            newBaselineSizes[componentName] = result.totalSizeKB * 1024;
         }
         await this.fs.writeFile(baselinePath, JSON.stringify(newBaselineSizes, null, 2));
     }
@@ -243,7 +250,7 @@ class BundleSizeAnalyser {
         for (const [componentName, componentConfig] of Object.entries(components)) {
             const {
                 maxSize,
-                warnOnIncrease = defaults.warnOnIncrease || '5%',
+                warnOnIncrease = defaults?.warnOnIncrease || null,
                 distFolderLocation,
                 exclude: componentExclude = exclude
             } = componentConfig;
