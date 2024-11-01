@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Output failures as a JSON report file named `compsizer-failure-report.json`
+- Make baseline file and warn thresholds optional
 
 ## [0.4.2] - 20-10-2024
 
