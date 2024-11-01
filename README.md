@@ -88,18 +88,19 @@ Each component package should have its own configuration file to specify the inc
     "gzip": true,
     "brotli": true
   },
-  "baselineFile": "component-bundle-sizes.json",
+  "baselineFile": "component-bundle-sizes.json", // Optional - if not provided, no baseline comparison takes place
   "components": {
     "modal": {
       "maxSize": "50 KB",
-      "warnOnIncrease": "10%",
+      "warnOnIncrease": "10%", // Optional
       "distFolderLocation": "./dist"
     },
     // You could add more components here if placing this config at the root of your project.
   },
-  "defaults": {
+  "defaults": { // Optional
     "warnOnIncrease": "5%"
   }
+}
 ```
 
 ### Configuration Fields
@@ -111,11 +112,11 @@ Each component package should have its own configuration file to specify the inc
 - **baselineFile**: (string) Path to the JSON file where the baseline sizes are stored.
 - **components**: (object) Configuration for each component. Each key corresponds to a component name.
   - `maxSize`: (string) The maximum allowable size for the component (e.g., `50KB`, `500KB`).
-  - `warnOnIncrease`: (string) Warn if the size increases by more than the specified percentage.
+  - `warnOnIncrease`: (string) OPTIONAL: Warn if the size increases by more than the specified percentage.
   - `distFolderLocation`: (string) Path pointing to the built component files.
   - `exclude`: (array) Glob patterns specific to the component to exclude. (Overrides the base `exclude`)
-- **defaults**: (object) Default settings that apply to all components.
-  - `warnOnIncrease`: (string) Default warning threshold for size increases.
+- **defaults**: (object) OPTIONAL: Default settings that apply to all components.
+  - `warnOnIncrease`: (string) OPTIONAL: Default warning threshold for size increases.
 
 ### Adding Config for Each Component
 

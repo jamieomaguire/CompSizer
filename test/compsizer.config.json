@@ -6,15 +6,10 @@
     "gzip": true,
     "brotli": true
   },
-  "baselineFile": "component-bundle-sizes.json",
   "components": {
     "testComponent": {
       "maxSize": "96 KB",
-      "warnOnIncrease": "10%",
       "distFolderLocation": "./test/testEnv"
     }
-  },
-  "defaults": {
-    "warnOnIncrease": "5%"
   }
 }
