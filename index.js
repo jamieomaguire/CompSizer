@@ -8,15 +8,14 @@ import chalk from 'chalk';
 import zlib from 'zlib';
 import BundleSizeAnalyser from './BundleSizeAnalyser.js';
 
-
 (async () => {
     const startTime = Date.now();
     const program = new Command();
-    program.option('-c, --config <path>', 'Path to configuration file', 'compsizer.config.json');
+    program.option('-c, --config <path>', 'Path to configuration file');
     program.parse(process.argv);
 
     const options = program.opts();
-    const configPath = path.resolve(process.cwd(), options.config);
+    const configPath = options.config ? path.resolve(process.cwd(), options.config) : null;
 
     try {
         const analyser = new BundleSizeAnalyser(fs, path, glob, zlib, chalk);

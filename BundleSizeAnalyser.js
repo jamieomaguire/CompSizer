@@ -35,8 +35,23 @@ class BundleSizeAnalyser {
     }
 
     async loadConfig(configPath) {
-        const configContent = await this.fs.readFile(configPath, 'utf8');
-        return JSON.parse(configContent);
+        if (configPath) {
+            // Load from external config file if a path is provided
+            const configContent = await this.fs.readFile(configPath, 'utf8');
+            return JSON.parse(configContent);
+        } else {
+            // No config path provided, load from package.json `compsizer` property
+            const packageJsonPath = this.path.resolve(process.cwd(), 'package.json');
+            const packageJsonContent = await this.fs.readFile(packageJsonPath, 'utf8');
+            const packageJson = JSON.parse(packageJsonContent);
+
+            if (packageJson.compsizer) {
+                console.log(this.chalk.yellow('Using `compsizer` configuration from package.json.'));
+                return packageJson.compsizer;
+            } else {
+                throw new Error('No `compsizer` configuration found in package.json and no external config file specified.');
+            }
+        }
     }
 
     async loadBaseline(baselineFile) {

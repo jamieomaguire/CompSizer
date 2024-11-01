@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Make compression config options optional and default both gzip and brotli to true
+- Read confing from `compsizer` property in package.json file if no config file path provided
+- Remove `defaults` config property
 
 ## [0.5.2] - 01-11-2024
 

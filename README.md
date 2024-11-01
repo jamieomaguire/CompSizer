@@ -75,6 +75,8 @@ npm run analyse-component-bundles
 
 Each component package should have its own configuration file to specify the inclusion/exclusion patterns for files, size limits, and compression options.
 
+Alternatively, you can place the exact same config inside your component `package.json` file as a `compsizer` property.
+
 **Note:** You can choose to place a single configuration file at the root of your repository and list all of your components in the `components` property together. However, please be aware that depending on how many components you add, it could take a while to generate the size reports for all of them at once.
 
 ### Example Configuration (placed in each component package, e.g., `modal/compsizer.config.json`)
@@ -96,13 +98,33 @@ Each component package should have its own configuration file to specify the inc
       "distFolderLocation": "./dist"
     },
     // You could add more components here if placing this config at the root of your project.
-  },
-  "defaults": { // Optional
-    "warnOnIncrease": "5%"
   }
 }
 ```
 
+Or in package.json:
+```json
+{
+  "compsizer": {
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "compression": { // Optional compression options
+      "gzip": true,
+      "brotli": true
+    },
+    "baselineFile": "component-bundle-sizes.json", // Optional - if not provided, no baseline comparison takes place
+    "components": {
+      "modal": {
+        "maxSize": "50 KB",
+        "warnOnIncrease": "10%", // Optional
+        "distFolderLocation": "./dist"
+      },
+      // You could add more components here if placing this config at the root of your project.
+    }
+  }
+}
+```
 ### Configuration Fields
 
 - **exclude**: (array) Glob patterns to exclude certain files from analysis.
@@ -115,8 +137,6 @@ Each component package should have its own configuration file to specify the inc
   - `warnOnIncrease`: (string) OPTIONAL: Warn if the size increases by more than the specified percentage.
   - `distFolderLocation`: (string) Path pointing to the built component files.
   - `exclude`: (array) Glob patterns specific to the component to exclude. (Overrides the base `exclude`)
-- **defaults**: (object) OPTIONAL: Default settings that apply to all components.
-  - `warnOnIncrease`: (string) OPTIONAL: Default warning threshold for size increases.
 
 ### Adding Config for Each Component
 
